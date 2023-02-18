@@ -2,8 +2,11 @@ package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.AlreadyExistException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.validator.ValidateService;
 
 import javax.validation.Valid;
 import java.time.LocalDate;
@@ -19,6 +22,11 @@ public class FilmController {
 
     private Map<Integer, Film> films = new HashMap<>();
     private Integer nextId = 1;
+    private ValidateService validateService;
+
+    public FilmController(ValidateService validateService) {
+        this.validateService = validateService;
+    }
 
     @GetMapping
     public List<Film> getFilms() {
@@ -28,8 +36,14 @@ public class FilmController {
     @PostMapping
     public Film saveFilm(@Valid @RequestBody Film film) {
         log.info("Получен запрос к эндпоинту: 'POST/films', тело запроса: {}", film);
-        validateFilm(film, Method.POST);
 
+        if (film.getId() != null && films.containsKey(film.getId())) {
+            String message = "Фильм c id = " + film.getId() + "уже существует.";
+            log.warn(message);
+            throw new AlreadyExistException(message);
+        }
+
+        validateService.validateFilm(film);
         final int id = generateId();
         film.setId(id);
         films.put(id, film);
@@ -40,34 +54,20 @@ public class FilmController {
     @PutMapping
     public Film putFilm(@Valid @RequestBody Film film) {
         log.info("Получен запрос к эндпоинту: 'PUT/films', тело запроса: {}", film);
-        validateFilm(film, Method.PUT);
+
+        if (film.getId() == null || !films.containsKey(film.getId())) {
+            String message = "Фильма не существует.";
+            log.warn(message);
+            throw new NotFoundException(message);
+        }
+
+        validateService.validateFilm(film);
         films.put(film.getId(), film);
         log.info("Фильм с id = " + film.getId() + " обновлен.");
         return film;
     }
 
-    private void validateFilm(Film film, Method method) {
-        if (method.equals(Method.POST) && film.getId() != null && films.containsKey(film.getId())) {
-            String message = "Фильм уже существует.";
-            log.warn(message);
-            throw new ValidationException(message);
-        } else if (method.equals(Method.PUT) && (film.getId() == null || !films.containsKey(film.getId()))) {
-            String message = "Фильма не существует.";
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-
-        final LocalDate firstFilmDate = LocalDate.of(1895, 12, 28);
-        if (firstFilmDate.isAfter(film.getReleaseDate())) {
-            String message = "Дата выхода фильма не может быть позже дня рождения кино";
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-    }
-
     private Integer generateId() {
         return nextId++;
     }
-
-    private enum Method {GET, POST, PUT, DELETE}
 }
