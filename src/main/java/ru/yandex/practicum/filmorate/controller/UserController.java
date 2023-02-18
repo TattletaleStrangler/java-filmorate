@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
+import javax.validation.Valid;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +26,7 @@ public class UserController {
     }
 
     @PostMapping
-    public User saveUser(@RequestBody User user) {
+    public User saveUser(@Valid @RequestBody User user) {
         log.info("Получен запрос к эндпоинту: 'POST/users', тело запроса: {}", user);
         validateUser(user, Method.POST);
 
@@ -41,7 +42,7 @@ public class UserController {
     }
 
     @PutMapping
-    public User putUsers(@RequestBody User user) {
+    public User putUsers(@Valid @RequestBody User user) {
         log.info("Получен запрос к эндпоинту: 'PUT/users', тело запроса: {}", user);
         validateUser(user, Method.PUT);
         users.put(user.getId(), user);
@@ -57,25 +58,6 @@ public class UserController {
             throw new ValidationException(message);
         } else if (method.equals(Method.PUT) && (user.getId() == null || !users.containsKey(user.getId()))) {
             String message = "Пользователя не существует.";
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-
-        if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
-            String message = String.format("E-mail адрес некорректен: %s", user.getEmail());
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
-            String message = String.format("Login некорректен: %s", user.getLogin());
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-
-        LocalDate now = LocalDate.now();
-        if (now.isBefore(user.getBirthday())) {
-            String message = "День рождения пользователя не может быть в будущем.";
             log.warn(message);
             throw new ValidationException(message);
         }

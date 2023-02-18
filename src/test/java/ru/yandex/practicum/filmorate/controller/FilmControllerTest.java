@@ -16,9 +16,12 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.utils.LocalDateAdapter;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -41,16 +44,18 @@ class FilmControllerTest {
         film2 = new Film();
         film3 = new Film();
 
-        List<Film> films = List.of(film1, film2, film3);
-        int i = 1;
+        List<Film> films = Arrays.asList(film1, film2, film3);
 
-        for (Film film : films) {
-            film.setName("Name" + i);
-            film.setDescription("Description" + i);
-            film.setDuration(100 + i * 5);
-            film.setReleaseDate(LocalDate.of(1900 + i * 10, 1 + i, 1 + i * 2));
-            i++;
-        }
+        final int[] ordinal = new int[] {1};
+
+        films.forEach(film -> {
+                film.setName("name" + ordinal[0]);
+                film.setDescription("Description" + ordinal[0]);
+                film.setDuration(100 + ordinal[0] * 5);
+                film.setReleaseDate(LocalDate.of(1900 + ordinal[0] * 10, 1 + ordinal[0]
+                        , 1 + ordinal[0] * 2));
+        ordinal[0]++;
+        });
     }
 
     @Test
@@ -115,8 +120,9 @@ class FilmControllerTest {
         film1.setName("");
         final ResponseEntity<Film> response = restTemplate.postForEntity(URL, film1, Film.class);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals(new Film(), response.getBody());
+        List<HttpStatus> expected = List.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.BAD_REQUEST);
+        assertTrue(expected.contains(response.getStatusCode()), "Коды ответа не совпадают.");
+        assertEquals(new Film(), response.getBody(), "Тело ответа не соответствует ожидаемому.");
     }
 
     @Test
@@ -132,8 +138,9 @@ class FilmControllerTest {
 
         final ResponseEntity<Film> response = restTemplate.postForEntity(URL, film1, Film.class);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals(new Film(), response.getBody());
+        List<HttpStatus> expected = List.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.BAD_REQUEST);
+        assertTrue(expected.contains(response.getStatusCode()), "Коды ответа не совпадают.");
+        assertEquals(new Film(), response.getBody(), "Тело ответа не соответствует ожидаемому.");
     }
 
     @Test
@@ -142,8 +149,9 @@ class FilmControllerTest {
 
         final ResponseEntity<Film> response = restTemplate.postForEntity(URL, film1, Film.class);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals(new Film(), response.getBody());
+        List<HttpStatus> expected = List.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.BAD_REQUEST);
+        assertTrue(expected.contains(response.getStatusCode()), "Коды ответа не совпадают.");
+        assertEquals(new Film(), response.getBody(), "Тело ответа не соответствует ожидаемому.");
     }
 
     @Test
@@ -152,7 +160,8 @@ class FilmControllerTest {
 
         final ResponseEntity<Film> response = restTemplate.postForEntity(URL, film1, Film.class);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals(new Film(), response.getBody());
+        List<HttpStatus> expected = List.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.BAD_REQUEST);
+        assertTrue(expected.contains(response.getStatusCode()), "Коды ответа не совпадают.");
+        assertEquals(new Film(), response.getBody(), "Тело ответа не соответствует ожидаемому.");
     }
 }

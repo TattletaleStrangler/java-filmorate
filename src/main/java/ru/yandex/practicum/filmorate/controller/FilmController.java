@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
+import javax.validation.Valid;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +26,7 @@ public class FilmController {
     }
 
     @PostMapping
-    public Film saveFilm(@RequestBody Film film) {
+    public Film saveFilm(@Valid @RequestBody Film film) {
         log.info("Получен запрос к эндпоинту: 'POST/films', тело запроса: {}", film);
         validateFilm(film, Method.POST);
 
@@ -37,7 +38,7 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film putFilm(@RequestBody Film film) {
+    public Film putFilm(@Valid @RequestBody Film film) {
         log.info("Получен запрос к эндпоинту: 'PUT/films', тело запроса: {}", film);
         validateFilm(film, Method.PUT);
         films.put(film.getId(), film);
@@ -56,28 +57,9 @@ public class FilmController {
             throw new ValidationException(message);
         }
 
-        if (film.getName() == null || film.getName().isBlank()) {
-            String message = String.format("Передано некорректное имя фильма: %s", film.getName());
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-
-        if (film.getDescription().length() > 200) {
-            String message = String.format("Описание длиннее 200 символов: %s", film.getName());
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-
         final LocalDate firstFilmDate = LocalDate.of(1895, 12, 28);
         if (firstFilmDate.isAfter(film.getReleaseDate())) {
             String message = "Дата выхода фильма не может быть позже дня рождения кино";
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-
-        if (film.getDuration() < 0) {
-            String message = String.format("Длительность фильма не может быть отрицательной %d"
-                    , film.getDuration());
             log.warn(message);
             throw new ValidationException(message);
         }

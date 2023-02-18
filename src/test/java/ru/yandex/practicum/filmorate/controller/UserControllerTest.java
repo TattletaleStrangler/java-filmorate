@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -43,15 +44,15 @@ class UserControllerTest {
         user3 = new User();
 
         List<User> users = List.of(user1, user2, user3);
-        int i = 1;
+        final int[] ordinal = new int[] {1};
 
-        for (User user : users) {
-            user.setName("Name" + i);
-            user.setEmail(i + "user@email.ru");
-            user.setLogin(i + "userLogin");
-            user.setBirthday(LocalDate.of(1950 + i * 10, 1 + i, 1 + i * 2));
-            i++;
-        }
+        users.forEach(user -> {
+            user.setName("Name" + ordinal[0]);
+            user.setEmail(ordinal[0] + "user@email.ru");
+            user.setLogin(ordinal[0] + "userLogin");
+            user.setBirthday(LocalDate.of(1950 + ordinal[0] * 10, 1 + ordinal[0], 1 + ordinal[0] * 2));
+            ordinal[0]++;
+        });
     }
     
     @Test
@@ -127,8 +128,9 @@ class UserControllerTest {
         user1.setEmail("email");
         final ResponseEntity<User> response = restTemplate.postForEntity(URL, user1, User.class);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals(new User(), response.getBody());
+        List<HttpStatus> expected = List.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.BAD_REQUEST);
+        assertTrue(expected.contains(response.getStatusCode()), "Коды ответа не совпадают.");
+        assertEquals(new User(), response.getBody(), "Тело ответа не соответствует ожидаемому.");
     }
 
     @Test
@@ -136,8 +138,9 @@ class UserControllerTest {
         user1.setLogin("Log in");
         final ResponseEntity<User> response = restTemplate.postForEntity(URL, user1, User.class);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals(new User(), response.getBody());
+        List<HttpStatus> expected = List.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.BAD_REQUEST);
+        assertTrue(expected.contains(response.getStatusCode()), "Коды ответа не совпадают.");
+        assertEquals(new User(), response.getBody(), "Тело ответа не соответствует ожидаемому.");
     }
 
     @Test
@@ -145,8 +148,9 @@ class UserControllerTest {
         user1.setLogin("");
         final ResponseEntity<User> response = restTemplate.postForEntity(URL, user1, User.class);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals(new User(), response.getBody());
+        List<HttpStatus> expected = List.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.BAD_REQUEST);
+        assertTrue(expected.contains(response.getStatusCode()), "Коды ответа не совпадают.");
+        assertEquals(new User(), response.getBody(), "Тело ответа не соответствует ожидаемому.");
     }
 
     @Test
@@ -154,8 +158,9 @@ class UserControllerTest {
         user1.setBirthday(LocalDate.now().plusDays(1));
         final ResponseEntity<User> response = restTemplate.postForEntity(URL, user1, User.class);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals(new User(), response.getBody());
+        List<HttpStatus> expected = List.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.BAD_REQUEST);
+        assertTrue(expected.contains(response.getStatusCode()), "Коды ответа не совпадают.");
+        assertEquals(new User(), response.getBody(), "Тело ответа не соответствует ожидаемому.");
     }
 
 }
