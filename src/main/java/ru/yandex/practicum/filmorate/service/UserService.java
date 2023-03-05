@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -13,16 +13,13 @@ import java.util.Set;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
+    private final String notFoundUserFormat = "Пользователь с id = %d не найден.";
 
-    @Autowired
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
-
-    private void throwNotFoundException(Integer userId) {
-        String message = String.format("Пользователь %d не найден", userId);
+    private void throwNotFoundException(String format, Integer id) {
+        String message = String.format(format, id);
         log.warn(message);
         throw new NotFoundException(message);
     }
@@ -37,7 +34,8 @@ public class UserService {
     public User getUserById(Integer userId) {
         User user = userStorage.getUserById(userId);
         if (user == null) {
-            throwNotFoundException(userId);
+            log.warn(String.format(notFoundUserFormat, userId));
+            throwNotFoundException(notFoundUserFormat, userId);
         }
         return user;
     }
@@ -53,7 +51,8 @@ public class UserService {
     public User updateUser(User user) {
         Integer userId = user.getId();
         if (userId == null || userStorage.getUserById(userId) == null) {
-            throwNotFoundException(userId);
+            log.warn(String.format(notFoundUserFormat, userId));
+            throwNotFoundException(notFoundUserFormat, userId);
         }
         return userStorage.updateUser(user);
     }
@@ -63,10 +62,12 @@ public class UserService {
         User friend = userStorage.getUserById(friendId);
 
         if (user == null) {
-            throwNotFoundException(userId);
+            log.warn(String.format(notFoundUserFormat, userId));
+            throwNotFoundException(notFoundUserFormat, userId);
         }
         if (friend == null) {
-            throwNotFoundException(friendId);
+            log.warn(String.format(notFoundUserFormat, friendId));
+            throwNotFoundException(notFoundUserFormat, friendId);
         }
 
         user.addFriend(friendId);
@@ -81,10 +82,12 @@ public class UserService {
         User friend = userStorage.getUserById(friendId);
 
         if (user == null) {
-            throwNotFoundException(userId);
+            log.warn(String.format(notFoundUserFormat, userId));
+            throwNotFoundException(notFoundUserFormat, userId);
         }
         if (friend == null) {
-            throwNotFoundException(friendId);
+            log.warn(String.format(notFoundUserFormat, friendId));
+            throwNotFoundException(notFoundUserFormat, friendId);
         }
 
         user.removeFriend(friendId);
@@ -98,12 +101,13 @@ public class UserService {
         User user = userStorage.getUserById(userId);
 
         if (user == null) {
-            throwNotFoundException(userId);
+            log.warn(String.format(notFoundUserFormat, userId));
+            throwNotFoundException(notFoundUserFormat, userId);
         }
 
         final List<User> userFriends = new ArrayList<>();
 
-        if(user.getFriends() == null) {
+        if (user.getFriends() == null) {
             return userFriends;
         }
 
@@ -119,10 +123,12 @@ public class UserService {
         User other = userStorage.getUserById(otherId);
 
         if (user == null) {
-            throwNotFoundException(userId);
+            log.warn(String.format(notFoundUserFormat, userId));
+            throwNotFoundException(notFoundUserFormat, userId);
         }
         if (other == null) {
-            throwNotFoundException(otherId);
+            log.warn(String.format(notFoundUserFormat, otherId));
+            throwNotFoundException(notFoundUserFormat, otherId);
         }
 
         Set<Integer> userFriends = user.getFriends();

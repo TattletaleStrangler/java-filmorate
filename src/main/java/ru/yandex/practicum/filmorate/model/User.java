@@ -10,12 +10,9 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
-@Getter
-@Setter
-@ToString
-@EqualsAndHashCode
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PACKAGE)
 @NoArgsConstructor
+@Data
 @Builder
 public class User {
     private Integer id;
@@ -27,7 +24,7 @@ public class User {
     private String name;
     @PastOrPresent(message = "Дата рождения не может быть в будущем. ")
     private LocalDate birthday;
-    private Set<Integer> friends = new HashSet<>();
+    private final Set<Integer> friends = new HashSet<>();
 
     public void addFriend(Integer userId) {
         friends.add(userId);

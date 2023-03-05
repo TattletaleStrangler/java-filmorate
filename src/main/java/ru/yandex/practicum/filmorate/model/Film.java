@@ -6,17 +6,13 @@ import ru.yandex.practicum.filmorate.validator.LateDate;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Past;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
-@Getter
-@Setter
-@ToString
-@EqualsAndHashCode
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PACKAGE)
 @NoArgsConstructor
+@Data
 @Builder
 public class Film {
     private Integer id;
@@ -28,7 +24,7 @@ public class Film {
     private LocalDate releaseDate;
     @Min(value = 0, message = "Продолжительность фильма не может быть отрицательной.")
     private Integer duration;
-    private Set<Integer> usersLikes = new HashSet<>();
+    private final Set<Integer> usersLikes = new HashSet<>();
 
     public void addLike(Integer userId) {
         usersLikes.add(userId);

@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -11,34 +11,14 @@ import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static ru.yandex.practicum.filmorate.service.FilmService.Model.*;
-
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserService userService;
-
-
-    @Autowired
-    public FilmService(FilmStorage filmStorage, UserService userService) {
-        this.filmStorage = filmStorage;
-        this.userService = userService;
-    }
-
-    private void throwNotFoundException(Model model, Integer id) {
-        String message = "";
-        if (model.equals(FILM)) {
-            message = String.format("Фильм c id = %d не найден", id);
-        } else if (model.equals(Model.USER)) {
-            message = String.format("Пользователь c id = %d не найден", id);
-        }
-
-        log.warn(message);
-        throw new NotFoundException(message);
-    }
-
-    enum Model {FILM, USER}
+    private final String notFoundUserFormat = "Пользователь с id = %d не найден.";
+    private final String notFoundFilmFormat = "Фильм с id = %d не найден.";
 
     public Film createFilm(Film film) {
         return filmStorage.createFilm(film);
@@ -47,7 +27,8 @@ public class FilmService {
     public Film getFilmById(Integer filmId) {
         Film film = filmStorage.getFilmById(filmId);
         if (film == null) {
-            throwNotFoundException(FILM, filmId);
+            log.warn(String.format(notFoundFilmFormat, filmId));
+            NotFoundException.throwException(notFoundFilmFormat, filmId);
         }
         return film;
     }
@@ -63,7 +44,8 @@ public class FilmService {
     public Film updateFilm(Film film) {
         Integer filmId = film.getId();
         if (filmId == null || filmStorage.getFilmById(filmId) == null) {
-            throwNotFoundException(FILM, filmId);
+            log.warn(String.format(notFoundFilmFormat, filmId));
+            NotFoundException.throwException(notFoundFilmFormat, filmId);
         }
         return filmStorage.updateFilm(film);
     }
@@ -73,10 +55,12 @@ public class FilmService {
         User user = userService.getUserById(userId);
 
         if (film == null) {
-            throwNotFoundException(FILM, filmId);
+            log.warn(String.format(notFoundFilmFormat, filmId));
+            NotFoundException.throwException(notFoundFilmFormat, filmId);
         }
         if (user == null) {
-            throwNotFoundException(USER, userId);
+            log.warn(String.format(notFoundUserFormat, userId));
+            NotFoundException.throwException(notFoundUserFormat, userId);
         }
 
         film.addLike(userId);
@@ -87,10 +71,12 @@ public class FilmService {
         Film film = filmStorage.getFilmById(filmId);
 
         if (film == null) {
-            throwNotFoundException(FILM, filmId);
+            log.warn(String.format(notFoundFilmFormat, filmId));
+            NotFoundException.throwException(notFoundFilmFormat, filmId);
         }
-        if (film.getUsersLikes() == null || !film.getUsersLikes().contains(userId)){
-            throwNotFoundException(USER, filmId);
+        if (film.getUsersLikes() == null || !film.getUsersLikes().contains(userId)) {
+            log.warn(String.format(notFoundUserFormat, userId));
+            NotFoundException.throwException(notFoundUserFormat, userId);
         }
 
         film.removeLike(userId);
@@ -98,7 +84,9 @@ public class FilmService {
     }
 
     public List<Film> getPopularFilms(Integer count) {
-        return filmStorage.getAll().stream()
+        List<Film> films = filmStorage.getAll();
+
+        return films.stream()
                 .sorted((f0, f1) -> f1.getUsersLikes().size() - f0.getUsersLikes().size())
                 .limit(count)
                 .collect(Collectors.toList());
