@@ -46,17 +46,17 @@ class FilmControllerTest {
 
         List<Film> films = Arrays.asList(film1, film2, film3);
 
-        final int[] ordinal = new int[] {1};
+        final int[] ordinal = new int[]{1};
 
         films.forEach(film -> {
-                film.setName("name" + ordinal[0]);
-                film.setDescription("Description" + ordinal[0]);
-                film.setDuration(100 + ordinal[0] * 5);
-                film.setReleaseDate(LocalDate.of(1900 + ordinal[0] * 10, 1 + ordinal[0]
-                        , 1 + ordinal[0] * 2));
-                film.setMpa(new MpaRating(1, "G"));
-                film.setGenres(new ArrayList<>());
-        ordinal[0]++;
+            film.setName("name" + ordinal[0]);
+            film.setDescription("Description" + ordinal[0]);
+            film.setDuration(100 + ordinal[0] * 5);
+            film.setReleaseDate(LocalDate.of(1900 + ordinal[0] * 10, 1 + ordinal[0]
+                    , 1 + ordinal[0] * 2));
+            film.setMpa(new MpaRating(1, "G"));
+            film.setGenres(new ArrayList<>());
+            ordinal[0]++;
         });
     }
 

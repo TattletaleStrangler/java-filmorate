@@ -19,7 +19,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 @SpringBootTest
 @AutoConfigureTestDatabase
@@ -41,7 +42,7 @@ class FilmDbStorageTest {
 
         List<Film> films = Arrays.asList(film1, film2, film3);
 
-        final int[] ordinal = new int[] {1};
+        final int[] ordinal = new int[]{1};
 
         films.forEach(film -> {
             film.setName("name" + ordinal[0]);

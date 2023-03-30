@@ -15,7 +15,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 @SpringBootTest
 @AutoConfigureTestDatabase
@@ -34,7 +35,7 @@ class UserDbStorageTest {
         user3 = new User();
 
         List<User> users = List.of(user1, user2, user3);
-        final int[] ordinal = new int[] {1};
+        final int[] ordinal = new int[]{1};
 
         users.forEach(user -> {
             user.setName("Name" + ordinal[0]);

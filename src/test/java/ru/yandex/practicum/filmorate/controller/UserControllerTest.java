@@ -24,17 +24,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class UserControllerTest {
-    
+
     public final Gson gson = new GsonBuilder()
             .registerTypeAdapter(LocalDate.class, new LocalDateAdapter()).create();
-    
+
     public User user1;
     public User user2;
     public User user3;
-    
+
     @Autowired
     private TestRestTemplate restTemplate;
-    
+
     private final String URL = "/users";
 
     @BeforeEach
@@ -44,7 +44,7 @@ class UserControllerTest {
         user3 = new User();
 
         List<User> users = List.of(user1, user2, user3);
-        final int[] ordinal = new int[] {1};
+        final int[] ordinal = new int[]{1};
 
         users.forEach(user -> {
             user.setName("Name" + ordinal[0]);
@@ -54,7 +54,7 @@ class UserControllerTest {
             ordinal[0]++;
         });
     }
-    
+
     @Test
     void getUsers() {
         restTemplate.postForEntity(URL, user1, User.class);
