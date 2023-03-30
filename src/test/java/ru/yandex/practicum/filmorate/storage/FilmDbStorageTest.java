@@ -48,8 +48,7 @@ class FilmDbStorageTest {
             film.setName("name" + ordinal[0]);
             film.setDescription("Description" + ordinal[0]);
             film.setDuration(100 + ordinal[0] * 5);
-            film.setReleaseDate(LocalDate.of(1900 + ordinal[0] * 10, 1 + ordinal[0]
-                    , 1 + ordinal[0] * 2));
+            film.setReleaseDate(LocalDate.of(1900 + ordinal[0] * 10, 1 + ordinal[0], 1 + ordinal[0] * 2));
             film.setMpa(mpaStorage.getMpaRatingById(ordinal[0]));
             film.setGenres(genreStorage.getGenresByFilmId(ordinal[0]));
             ordinal[0]++;
