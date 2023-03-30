@@ -69,4 +69,6 @@ public class FilmController {
         log.info("Получен запрос к эндпоинту: 'DELETE /films/{}/like/{}'", filmId, userId);
         filmService.removeLike(filmId, userId);
     }
+
+
 }

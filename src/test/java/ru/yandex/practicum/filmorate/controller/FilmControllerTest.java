@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.utils.LocalDateAdapter;
 
 import java.time.LocalDate;
@@ -26,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class FilmControllerTest {
-
     public final Gson gson = new GsonBuilder()
             .registerTypeAdapter(LocalDate.class, new LocalDateAdapter()).create();
     public Film film1;
@@ -54,6 +54,8 @@ class FilmControllerTest {
                 film.setDuration(100 + ordinal[0] * 5);
                 film.setReleaseDate(LocalDate.of(1900 + ordinal[0] * 10, 1 + ordinal[0]
                         , 1 + ordinal[0] * 2));
+                film.setMpa(new MpaRating(1, "G"));
+                film.setGenres(new ArrayList<>());
         ordinal[0]++;
         });
     }
