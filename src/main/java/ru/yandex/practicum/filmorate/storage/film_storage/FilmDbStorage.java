@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.storage;
+package ru.yandex.practicum.filmorate.storage.film_storage;
 
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Primary;
@@ -11,11 +11,9 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 
+import java.sql.Date;
 import java.sql.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Primary
@@ -23,8 +21,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
-    private final GenreStorage genreStorage;
-    private final MpaRatingStorage ratingStorage;
 
     @Override
     public Film createFilm(Film film) {
@@ -59,7 +55,7 @@ public class FilmDbStorage implements FilmStorage {
                     });
         }
 
-        return findFilmById(film.getId());
+        return film;
     }
 
     @Override
@@ -76,8 +72,20 @@ public class FilmDbStorage implements FilmStorage {
         String sqlQuery = "select * from film";
         List<Film> films = jdbcTemplate.query(sqlQuery, this::mapRowToFilm);
 
-        String sqlQueryLikes = "select user_id from user_likes where film_id = ?";
+        String sqlQueryGenres = "select genre_id from film_genres where film_id = ?";
+        for (Film film : films) {
+            List<Integer> genresId = jdbcTemplate.queryForList(sqlQueryGenres, Integer.class, film.getId());
+            List<Genre> genres = genresId.stream()
+                    .map((genreId) -> {
+                        Genre genre = new Genre();
+                        genre.setId(genreId);
+                        return genre;
+                    })
+                    .collect(Collectors.toList());
+            film.setGenres(genres);
+        }
 
+        String sqlQueryLikes = "select user_id from user_likes where film_id = ?";
         for (Film film : films) {
             List<Integer> userLikes = jdbcTemplate.queryForList(sqlQueryLikes, Integer.class, film.getId());
             userLikes.forEach(film::addLike);
@@ -109,6 +117,17 @@ public class FilmDbStorage implements FilmStorage {
         String sqlQuery = "select * from film where film_id = ?";
         Film film = jdbcTemplate.queryForObject(sqlQuery, this::mapRowToFilm, id);
 
+        String sqlQueryGenres = "select genre_id from film_genres where film_id = ?";
+        List<Integer> genresId = jdbcTemplate.queryForList(sqlQueryGenres, Integer.class, id);
+        film.setGenres(genresId.stream()
+                .map((genreId) -> {
+                    Genre genre = new Genre();
+                    genre.setId(genreId);
+                    return genre;
+                })
+                .collect(Collectors.toList())
+        );
+
         String sqlQueryLikes = "select user_id from user_likes where film_id = ?";
         List<Integer> userLikes = jdbcTemplate.queryForList(sqlQueryLikes, Integer.class, id);
         userLikes.forEach(film::addLike);
@@ -118,10 +137,10 @@ public class FilmDbStorage implements FilmStorage {
 
     private Film mapRowToFilm(ResultSet resultSet, int rowNum) throws SQLException {
         Integer ratingId = resultSet.getInt("mpa_rating_id");
-        MpaRating rating = ratingStorage.getMpaRatingById(ratingId);
+        MpaRating rating = new MpaRating();
+        rating.setId(ratingId);
 
         Integer filmId = resultSet.getInt("film_id");
-        List<Genre> genres = genreStorage.getGenresByFilmId(filmId);
 
         Film film = Film.builder()
                 .id(filmId)
@@ -130,41 +149,35 @@ public class FilmDbStorage implements FilmStorage {
                 .releaseDate(resultSet.getDate("releasedate").toLocalDate())
                 .duration(resultSet.getInt("duration"))
                 .mpa(rating)
-                .genres(genres)
                 .build();
         return film;
     }
 
     private void updateGenres(Film film) {
-        Set<Genre> newGenres = new HashSet<>();
+        final List<Integer> newGenresId = new ArrayList<>();
         if (film.getGenres() != null) {
-            newGenres.addAll(film.getGenres());
+            film.getGenres().stream().map(Genre::getId).forEach(newGenresId::add);
         }
 
-        List<Genre> oldGenres = genreStorage.getGenresByFilmId(film.getId());
+        String sqlQueryGetGenresId = "select genre_id from film_genres where film_id = ?";
+        List<Integer> oldGenresId = jdbcTemplate.queryForList(sqlQueryGetGenresId, Integer.class, film.getId());
 
-        List<Genre> deleteGenres = oldGenres.stream()
-                .filter(genre -> !newGenres.contains(genre))
+        List<Integer> deleteGenres = oldGenresId.stream()
+                .filter(genreId -> !newGenresId.contains(genreId))
                 .collect(Collectors.toList());
 
-        List<Genre> addGenres = newGenres.stream()
-                .filter(genre -> !oldGenres.contains(genre))
+        List<Integer> addGenres = newGenresId.stream()
+                .filter(genreId -> !oldGenresId.contains(genreId))
                 .collect(Collectors.toList());
 
         String sqlQueryRemoveGenres = "delete from film_genres where genre_id = ? and film_id = ?";
         if (deleteGenres.size() > 0) {
-            deleteGenres
-                    .stream()
-                    .map(Genre::getId)
-                    .forEach((genreId) -> jdbcTemplate.update(sqlQueryRemoveGenres, genreId, film.getId()));
+            deleteGenres.forEach((genreId) -> jdbcTemplate.update(sqlQueryRemoveGenres, genreId, film.getId()));
         }
 
         String sqlQueryInsertGenres = "insert into film_genres(film_id, genre_id) values(?, ?)";
         if (addGenres.size() > 0) {
-            addGenres
-                    .stream()
-                    .map(Genre::getId)
-                    .forEach((genreId) -> jdbcTemplate.update(sqlQueryInsertGenres, film.getId(), genreId));
+            addGenres.forEach((genreId) -> jdbcTemplate.update(sqlQueryInsertGenres, film.getId(), genreId));
         }
     }
 

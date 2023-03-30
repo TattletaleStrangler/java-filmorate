@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.storage;
+package ru.yandex.practicum.filmorate.storage.user_storage;
 
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Primary;

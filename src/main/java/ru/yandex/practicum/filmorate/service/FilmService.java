@@ -8,7 +8,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film_storage.FilmStorage;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,15 +34,22 @@ public class FilmService {
 
     public Film getFilmById(Integer filmId) {
         Film film = filmStorage.getFilmById(filmId);
+
         if (film == null) {
             log.warn(String.format(NOT_FOUND_FILM_FORMAT, filmId));
             NotFoundException.throwException(NOT_FOUND_FILM_FORMAT, filmId);
         }
+
+        setNameForMpa(film);
+        setNameForGenres(film);
         return film;
     }
 
     public List<Film> getFilms() {
-        return filmStorage.getAll();
+        List<Film> films = filmStorage.getAll();
+        films.forEach(this::setNameForMpa);
+        films.forEach(this::setNameForGenres);
+        return films;
     }
 
     public void deleteFilmById(Integer filmId) {
@@ -61,7 +68,10 @@ public class FilmService {
             NotFoundException.throwException(NOT_FOUND_FILM_FORMAT, filmId);
         }
         checkFilmsData(film);
-        return filmStorage.updateFilm(film);
+        Film updatedFilm = filmStorage.updateFilm(film);
+        setNameForMpa(updatedFilm);
+        setNameForGenres(updatedFilm);
+        return updatedFilm;
     }
 
     public void addLike(Integer filmId, Integer userId) {
@@ -99,11 +109,13 @@ public class FilmService {
 
     public List<Film> getPopularFilms(Integer count) {
         List<Film> films = filmStorage.getAll();
-
-        return films.stream()
+        List<Film> popular = films.stream()
                 .sorted((f0, f1) -> f1.getUsersLikes().size() - f0.getUsersLikes().size())
                 .limit(count)
                 .collect(Collectors.toList());
+        popular.forEach(this::setNameForMpa);
+        popular.forEach(this::setNameForGenres);
+        return popular;
     }
 
     private void checkFilmsData(Film film) {
@@ -138,5 +150,13 @@ public class FilmService {
         if (userFromDb == null) {
             NotFoundException.throwException(NOT_FOUND_USER_FORMAT, userId);
         }
+    }
+
+    private void setNameForGenres(Film film) {
+        film.getGenres().forEach((genre) -> genre.setName(genreService.getGenreById(genre.getId()).getName()));
+    }
+
+    private void setNameForMpa(Film film) {
+        film.setMpa(mpaService.getMpaById(film.getMpa().getId()));
     }
 }

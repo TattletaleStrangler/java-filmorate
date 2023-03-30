@@ -3,18 +3,17 @@ package ru.yandex.practicum.filmorate.storage;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataAccessException;
 import org.springframework.test.annotation.DirtiesContext;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.MpaRating;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.film_storage.FilmDbStorage;
+import ru.yandex.practicum.filmorate.storage.genre_storage.GenreDbStorage;
+import ru.yandex.practicum.filmorate.storage.mpa_storage.MpaRatingDbStorage;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -109,10 +108,6 @@ class FilmDbStorageTest {
         Optional<Film> filmOptional = Optional.ofNullable(filmStorage.getFilmById(film.getId()));
 
         assertFalse(filmOptional.isPresent());
-//        assertThrows(
-//                DataAccessException.class,
-//                () -> filmStorage.getFilmById(film.getId())
-//        );
     }
 
     @Test
