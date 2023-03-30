@@ -14,13 +14,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MpaService {
     private final MpaRatingStorage mpaRatingStorage;
-    private final String NOT_FOUND_MPA_FORMAT = "MPA рейтинг с id = %d не найден.";
+    private final String notFoundMpaFormat = "MPA рейтинг с id = %d не найден.";
 
     public MpaRating getMpaById(Integer mpaId) {
         MpaRating mpaRating = mpaRatingStorage.getMpaRatingById(mpaId);
         if (mpaRating == null) {
-            log.warn(String.format(NOT_FOUND_MPA_FORMAT, mpaId));
-            NotFoundException.throwException(NOT_FOUND_MPA_FORMAT, mpaId);
+            log.warn(String.format(notFoundMpaFormat, mpaId));
+            NotFoundException.throwException(notFoundMpaFormat, mpaId);
         }
         return mpaRating;
     }

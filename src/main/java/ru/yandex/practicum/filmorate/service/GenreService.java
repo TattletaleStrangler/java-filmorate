@@ -14,13 +14,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GenreService {
     private final GenreStorage genreStorage;
-    private final String NOT_FOUND_GENRE_FORMAT = "Жанр с id = %d не найден.";
+    private final String notFoundGenreFormat = "Жанр с id = %d не найден.";
 
     public Genre getGenreById(Integer genreId) {
         Genre genre = genreStorage.getGenreById(genreId);
         if (genre == null) {
-            log.warn(String.format(NOT_FOUND_GENRE_FORMAT, genreId));
-            NotFoundException.throwException(NOT_FOUND_GENRE_FORMAT, genreId);
+            log.warn(String.format(notFoundGenreFormat, genreId));
+            NotFoundException.throwException(notFoundGenreFormat, genreId);
         }
         return genre;
     }
