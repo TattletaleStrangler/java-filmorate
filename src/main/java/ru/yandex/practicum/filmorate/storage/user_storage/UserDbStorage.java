@@ -8,22 +8,21 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.util.FriendsExtractor;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Primary
 @Component
 @AllArgsConstructor
 public class UserDbStorage implements UserStorage {
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
+    private final FriendsExtractor friendsExtractor;
 
     @Override
     public User createUser(User user) {
@@ -42,12 +41,9 @@ public class UserDbStorage implements UserStorage {
 
         user.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
 
-        String sqlQueryInsertFriends = "insert into friends(from_user, to_user) values(?, ?)";
-        user.getFriends()
-                .stream()
-                .forEach((friend_id) -> {
-                    jdbcTemplate.update(sqlQueryInsertFriends, user.getId(), friend_id);
-                });
+        if (user.getFriends() != null && user.getFriends().size() > 0) {
+            insertFriends(user.getId(), user.getFriends());
+        }
 
         return user;
     }
@@ -72,14 +68,33 @@ public class UserDbStorage implements UserStorage {
     public List<User> getAll() {
         String sqlQuery = "select * from users";
         List<User> users = jdbcTemplate.query(sqlQuery, this::rowMapToUser);
+        addFriendsToUser(users);
+        return users;
+    }
 
-        String sqlQueryFriends = "select friend_id from friends where user_id = ?";
-        for (User user : users) {
-            List<Integer> friendsId = jdbcTemplate.queryForList(sqlQueryFriends, Integer.class, user.getId());
-            friendsId.forEach(user::addFriend);
+    private void addFriendsToUser(List<User> users) {
+        if (users.size() == 0) {
+            return;
         }
 
-        return users;
+        String sqlFriends = "select user_id, friend_id from friends where user_id IN (";
+        StringBuilder sqlQueryFriends = new StringBuilder(sqlFriends);
+        for (User user : users) {
+            sqlQueryFriends.append(user.getId()).append(",");
+        }
+        sqlQueryFriends.deleteCharAt(sqlQueryFriends.length() - 1);
+        sqlQueryFriends.append(")");
+
+        Map<Integer, Set<Integer>> usersIdAndTheirFriendsId = jdbcTemplate.query(sqlQueryFriends.toString(),
+                friendsExtractor);
+
+        for (User user : users) {
+            if (usersIdAndTheirFriendsId.containsKey(user.getId())) {
+                user.setFriends(usersIdAndTheirFriendsId.get(user.getId()));
+            } else {
+                user.setFriends(new HashSet<>());
+            }
+        }
     }
 
     @Override
@@ -104,6 +119,15 @@ public class UserDbStorage implements UserStorage {
         } catch (DataAccessException e) {
             return null;
         }
+    }
+
+    private void insertFriends(Integer userId, Set<Integer> friendsId) {
+        String sqlInsertFriends = "insert into friends(user_id, friend_id) values";
+        StringBuilder sqlQuery = new StringBuilder(sqlInsertFriends);
+        friendsId.forEach(friendId -> sqlQuery.append(String.format("(%d, %d),"), userId, friendId));
+        sqlQuery.deleteCharAt(sqlQuery.length() - 1);
+
+        jdbcTemplate.update(sqlQuery.toString());
     }
 
     private User rowMapToUser(ResultSet resultSet, int rowNum) throws SQLException {
@@ -134,10 +158,30 @@ public class UserDbStorage implements UserStorage {
                 .filter((friend) -> !oldFriends.contains(friend))
                 .collect(Collectors.toList());
 
-        String sqlQueryDeleteFriend = "delete from friends where user_id = ? and friend_id = ?";
-        deleteFriends.forEach((friendId) -> jdbcTemplate.update(sqlQueryDeleteFriend, user.getId(), friendId));
+        deleteFriends(user.getId(), deleteFriends);
+        insertFriends(user.getId(), addFriends);
+    }
 
-        String sqlQueryAddFriend = "insert into friends(user_id, friend_id) values(?, ?)";
-        addFriends.forEach((friendId) -> jdbcTemplate.update(sqlQueryAddFriend, user.getId(), friendId));
+    private void deleteFriends(Integer userId, List<Integer> friendsId) {
+        if (friendsId != null && friendsId.size() > 0) {
+            String sqlDeleteFriends = "delete from friends where user_id = ? and friend_id IN (";
+            StringBuilder sqlQuery = new StringBuilder(sqlDeleteFriends);
+            friendsId.forEach(friendId -> sqlQuery.append(String.format("%d,", friendId)));
+            sqlQuery.deleteCharAt(sqlQuery.length() - 1);
+            sqlQuery.append(")");
+
+            jdbcTemplate.update(sqlQuery.toString(), userId);
+        }
+    }
+
+    private void insertFriends(Integer userId, List<Integer> friendsId) {
+        if (friendsId != null && friendsId.size() > 0) {
+            String sqlInsertFriends = "insert into friends(user_id, friend_id) values";
+            StringBuilder sqlQuery = new StringBuilder(sqlInsertFriends);
+            friendsId.forEach(friendId -> sqlQuery.append(String.format("(%d, %d),", userId, friendId)));
+            sqlQuery.deleteCharAt(sqlQuery.length() - 1);
+
+            jdbcTemplate.update(sqlQuery.toString());
+        }
     }
 }

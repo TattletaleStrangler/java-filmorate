@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.storage.mpa_storage.MpaRatingDbStorage;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -94,6 +95,14 @@ class FilmDbStorageTest {
         film1.setId(1);
         film2.setId(2);
         film3.setId(3);
+
+        film1.setMpa(new MpaRating(1, null));
+        film2.setMpa(new MpaRating(2, null));
+        film3.setMpa(new MpaRating(3, null));
+
+        film1.setUsersLikes(new HashSet<>());
+        film2.setUsersLikes(new HashSet<>());
+        film3.setUsersLikes(new HashSet<>());
 
         List<Film> expectedFilms = List.of(film1, film2, film3);
         assertIterableEquals(expectedFilms, filmStorage.getAll(), "Списки фильмов не совпадают");

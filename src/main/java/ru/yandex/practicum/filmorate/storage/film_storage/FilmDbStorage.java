@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.util.GenresExtractor;
+import ru.yandex.practicum.filmorate.util.LikesExtractor;
 
 import java.sql.Date;
 import java.sql.*;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
+    private final LikesExtractor likesExtractor;
+    private final GenresExtractor genresExtractor;
 
     @Override
     public Film createFilm(Film film) {
@@ -44,15 +48,9 @@ public class FilmDbStorage implements FilmStorage {
         }, keyHolder);
         film.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
 
-        String sqlQueryInsertGenres = "insert into film_genres(film_id, genre_id) values(?, ?)";
-
         if (film.getGenres() != null) {
-            film.getGenres()
-                    .stream()
-                    .map(Genre::getId)
-                    .forEach((genreId) -> {
-                        jdbcTemplate.update(sqlQueryInsertGenres, film.getId(), genreId);
-                    });
+            List<Integer> genresId = film.getGenres().stream().map(Genre::getId).collect(Collectors.toList());
+            insertFilmGenres(film.getId(), genresId);
         }
 
         return film;
@@ -72,24 +70,8 @@ public class FilmDbStorage implements FilmStorage {
         String sqlQuery = "select * from film";
         List<Film> films = jdbcTemplate.query(sqlQuery, this::mapRowToFilm);
 
-        String sqlQueryGenres = "select genre_id from film_genres where film_id = ?";
-        for (Film film : films) {
-            List<Integer> genresId = jdbcTemplate.queryForList(sqlQueryGenres, Integer.class, film.getId());
-            List<Genre> genres = genresId.stream()
-                    .map((genreId) -> {
-                        Genre genre = new Genre();
-                        genre.setId(genreId);
-                        return genre;
-                    })
-                    .collect(Collectors.toList());
-            film.setGenres(genres);
-        }
-
-        String sqlQueryLikes = "select user_id from user_likes where film_id = ?";
-        for (Film film : films) {
-            List<Integer> userLikes = jdbcTemplate.queryForList(sqlQueryLikes, Integer.class, film.getId());
-            userLikes.forEach(film::addLike);
-        }
+        addGenresToFilms(films);
+        addLikesToFilms(films);
 
         return films;
     }
@@ -113,12 +95,24 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
+    private void insertFilmGenres(Integer filmId, List<Integer> genresId) {
+        if (genresId != null && genresId.size() > 0) {
+            String sqlInsertGenres = "insert into film_genres(film_id, genre_id) values";
+            StringBuilder sqlQuery = new StringBuilder(sqlInsertGenres);
+            genresId.forEach(genreId -> sqlQuery.append(String.format("(%d, %d),", filmId, genreId)));
+            sqlQuery.deleteCharAt(sqlQuery.length() - 1);
+
+            jdbcTemplate.update(sqlQuery.toString());
+        }
+    }
+
     private Film findFilmById(Integer id) {
         String sqlQuery = "select * from film where film_id = ?";
         Film film = jdbcTemplate.queryForObject(sqlQuery, this::mapRowToFilm, id);
 
         String sqlQueryGenres = "select genre_id from film_genres where film_id = ?";
         List<Integer> genresId = jdbcTemplate.queryForList(sqlQueryGenres, Integer.class, id);
+
         film.setGenres(genresId.stream()
                 .map((genreId) -> {
                     Genre genre = new Genre();
@@ -130,9 +124,65 @@ public class FilmDbStorage implements FilmStorage {
 
         String sqlQueryLikes = "select user_id from user_likes where film_id = ?";
         List<Integer> userLikes = jdbcTemplate.queryForList(sqlQueryLikes, Integer.class, id);
-        userLikes.forEach(film::addLike);
+        film.setUsersLikes(new HashSet<>(userLikes));
 
         return film;
+    }
+
+    private void addGenresToFilms(List<Film> films) {
+        if (films.size() == 0) {
+            return;
+        }
+
+        String sqlGenres = "select film_id, genre_id from film_genres where film_id IN (";
+        StringBuilder sqlQueryGenres = new StringBuilder(sqlGenres);
+        for (Film film : films) {
+            sqlQueryGenres.append(film.getId()).append(",");
+        }
+        sqlQueryGenres.deleteCharAt(sqlQueryGenres.length() - 1);
+        sqlQueryGenres.append(")");
+
+        Map<Integer, Set<Integer>> filmsIdAndTheirGenresId = jdbcTemplate.query(sqlQueryGenres.toString(), genresExtractor);
+
+        for (Film film : films) {
+            if (filmsIdAndTheirGenresId.containsKey(film.getId())) {
+                List<Genre> genresWithoutName = filmsIdAndTheirGenresId.get(film.getId())
+                        .stream()
+                        .map((genreId) -> {
+                            Genre genre = new Genre();
+                            genre.setId(genreId);
+                            return genre;
+                        })
+                        .collect(Collectors.toList());
+                film.setGenres(genresWithoutName);
+            } else {
+                film.setGenres(new ArrayList<>());
+            }
+        }
+    }
+
+    private void addLikesToFilms(List<Film> films) {
+        if (films.size() == 0) {
+            return;
+        }
+
+        String sqlLikes = "select user_id, film_id from user_likes where film_id IN (";
+        StringBuilder sqlQueryLikes = new StringBuilder(sqlLikes);
+        for (Film film : films) {
+            sqlQueryLikes.append(film.getId()).append(",");
+        }
+        sqlQueryLikes.deleteCharAt(sqlQueryLikes.length() - 1);
+        sqlQueryLikes.append(")");
+
+        Map<Integer, Set<Integer>> filmsIdAndTheirLikesId = jdbcTemplate.query(sqlQueryLikes.toString(), likesExtractor);
+
+        for (Film film : films) {
+            if (filmsIdAndTheirLikesId.containsKey(film.getId())) {
+                film.setUsersLikes(filmsIdAndTheirLikesId.get(film.getId()));
+            } else {
+                film.setUsersLikes(new HashSet<>());
+            }
+        }
     }
 
     private Film mapRowToFilm(ResultSet resultSet, int rowNum) throws SQLException {
@@ -154,7 +204,7 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void updateGenres(Film film) {
-        final List<Integer> newGenresId = new ArrayList<>();
+        final Set<Integer> newGenresId = new HashSet<>();
         if (film.getGenres() != null) {
             film.getGenres().stream().map(Genre::getId).forEach(newGenresId::add);
         }
@@ -170,14 +220,19 @@ public class FilmDbStorage implements FilmStorage {
                 .filter(genreId -> !oldGenresId.contains(genreId))
                 .collect(Collectors.toList());
 
-        String sqlQueryRemoveGenres = "delete from film_genres where genre_id = ? and film_id = ?";
-        if (deleteGenres.size() > 0) {
-            deleteGenres.forEach((genreId) -> jdbcTemplate.update(sqlQueryRemoveGenres, genreId, film.getId()));
-        }
+        deleteFilmGenres(film.getId(), deleteGenres);
+        insertFilmGenres(film.getId(), addGenres);
+    }
 
-        String sqlQueryInsertGenres = "insert into film_genres(film_id, genre_id) values(?, ?)";
-        if (addGenres.size() > 0) {
-            addGenres.forEach((genreId) -> jdbcTemplate.update(sqlQueryInsertGenres, film.getId(), genreId));
+    private void deleteFilmGenres(Integer filmId, List<Integer> genresId) {
+        if (genresId != null && genresId.size() > 0) {
+            String sqlDeleteGenres = "delete from film_genres where film_id = ? and genre_id IN (";
+            StringBuilder sqlQuery = new StringBuilder(sqlDeleteGenres);
+            genresId.forEach(genreId -> sqlQuery.append(String.format("%d,", genreId)));
+            sqlQuery.deleteCharAt(sqlQuery.length() - 1);
+            sqlQuery.append(")");
+
+            jdbcTemplate.update(sqlQuery.toString(), filmId);
         }
     }
 
@@ -187,7 +242,7 @@ public class FilmDbStorage implements FilmStorage {
             newUserLikes.addAll(film.getUsersLikes());
         }
 
-        Set<Integer> oldUserLikes = getFilmById(film.getId()).getUsersLikes();
+        Set<Integer> oldUserLikes = findFilmById(film.getId()).getUsersLikes();
 
         List<Integer> deleteLikes = oldUserLikes.stream()
                 .filter(userId -> !newUserLikes.contains(userId))
@@ -197,15 +252,8 @@ public class FilmDbStorage implements FilmStorage {
                 .filter(userId -> !oldUserLikes.contains(userId))
                 .collect(Collectors.toList());
 
-        String sqlQueryRemoveLike = "delete from user_likes where film_id = ? and user_id = ?";
-        if (deleteLikes.size() > 0) {
-            deleteLikes.forEach((userId) -> jdbcTemplate.update(sqlQueryRemoveLike, film.getId(), userId));
-        }
-
-        String sqlQueryInsertLikes = "insert into user_likes(film_id, user_id) values(?, ?)";
-        if (addLikes.size() > 0) {
-            addLikes.forEach((userId) -> jdbcTemplate.update(sqlQueryInsertLikes, film.getId(), userId));
-        }
+        deleteLikes(film.getId(), deleteLikes);
+        insertLikes(film.getId(), addLikes);
     }
 
     private void updateOnlyFilm(Film film) {
@@ -225,5 +273,28 @@ public class FilmDbStorage implements FilmStorage {
                 film.getDuration(),
                 ratingId,
                 film.getId());
+    }
+
+    private void deleteLikes(Integer filmId, List<Integer> userLikes) {
+        if (userLikes != null && userLikes.size() > 0) {
+            String sqlDeleteLikes = "delete from user_likes where film_id = ? and user_id IN (";
+            StringBuilder sqlQuery = new StringBuilder(sqlDeleteLikes);
+            userLikes.forEach(userId -> sqlQuery.append(String.format("%d,", userId)));
+            sqlQuery.deleteCharAt(sqlQuery.length() - 1);
+            sqlQuery.append(")");
+
+            jdbcTemplate.update(sqlQuery.toString(), filmId);
+        }
+    }
+
+    private void insertLikes(Integer filmId, List<Integer> userLikes) {
+        if (userLikes != null && userLikes.size() > 0) {
+            String sqlInsertLikes = "insert into user_likes(film_id, user_id) values";
+            StringBuilder sqlQuery = new StringBuilder(sqlInsertLikes);
+            userLikes.forEach(userId -> sqlQuery.append(String.format("(%d, %d),", filmId, userId)));
+            sqlQuery.deleteCharAt(sqlQuery.length() - 1);
+
+            jdbcTemplate.update(sqlQuery.toString());
+        }
     }
 }

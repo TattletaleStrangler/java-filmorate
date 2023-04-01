@@ -10,8 +10,11 @@ import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film_storage.FilmStorage;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static ru.yandex.practicum.filmorate.util.Constants.*;
 
 @Service
 @Slf4j
@@ -22,10 +25,6 @@ public class FilmService {
     private final UserService userService;
     private final GenreService genreService;
     private final MpaService mpaService;
-    private final String notFoundUserFormat = "Пользователь с id = %d не найден.";
-    private final String notFoundFilmFormat = "Фильм с id = %d не найден.";
-    private final String notFoundGenreFormat = "Жанр с id = %d не найден.";
-    private final String notFoundMpaFormat = "MPA рейтинг с id = %d не найден.";
 
     public Film createFilm(Film film) {
         checkFilmsData(film);
@@ -36,8 +35,8 @@ public class FilmService {
         Film film = filmStorage.getFilmById(filmId);
 
         if (film == null) {
-            log.warn(String.format(notFoundFilmFormat, filmId));
-            NotFoundException.throwException(notFoundFilmFormat, filmId);
+            log.warn(String.format(NOT_FOUND_FILM_FORMAT, filmId));
+            NotFoundException.throwException(NOT_FOUND_FILM_FORMAT, filmId);
         }
 
         setNameForMpa(film);
@@ -47,16 +46,16 @@ public class FilmService {
 
     public List<Film> getFilms() {
         List<Film> films = filmStorage.getAll();
-        films.forEach(this::setNameForMpa);
-        films.forEach(this::setNameForGenres);
+        setNameForMpa(films);
+        setNameForGenres(films);
         return films;
     }
 
     public void deleteFilmById(Integer filmId) {
         Film film = filmStorage.getFilmById(filmId);
         if (film == null) {
-            log.warn(String.format(notFoundFilmFormat, filmId));
-            NotFoundException.throwException(notFoundFilmFormat, filmId);
+            log.warn(String.format(NOT_FOUND_FILM_FORMAT, filmId));
+            NotFoundException.throwException(NOT_FOUND_FILM_FORMAT, filmId);
         }
         filmStorage.deleteFilmById(filmId);
     }
@@ -64,8 +63,8 @@ public class FilmService {
     public Film updateFilm(Film film) {
         Integer filmId = film.getId();
         if (filmId == null || filmStorage.getFilmById(filmId) == null) {
-            log.warn(String.format(notFoundFilmFormat, filmId));
-            NotFoundException.throwException(notFoundFilmFormat, filmId);
+            log.warn(String.format(NOT_FOUND_FILM_FORMAT, filmId));
+            NotFoundException.throwException(NOT_FOUND_FILM_FORMAT, filmId);
         }
         checkFilmsData(film);
         Film updatedFilm = filmStorage.updateFilm(film);
@@ -79,12 +78,12 @@ public class FilmService {
         User user = userService.getUserById(userId);
 
         if (film == null) {
-            log.warn(String.format(notFoundFilmFormat, filmId));
-            NotFoundException.throwException(notFoundFilmFormat, filmId);
+            log.warn(String.format(NOT_FOUND_FILM_FORMAT, filmId));
+            NotFoundException.throwException(NOT_FOUND_FILM_FORMAT, filmId);
         }
         if (user == null) {
-            log.warn(String.format(notFoundUserFormat, userId));
-            NotFoundException.throwException(notFoundUserFormat, userId);
+            log.warn(String.format(NOT_FOUND_USER_FORMAT, userId));
+            NotFoundException.throwException(NOT_FOUND_USER_FORMAT, userId);
         }
 
         film.addLike(userId);
@@ -95,12 +94,12 @@ public class FilmService {
         Film film = filmStorage.getFilmById(filmId);
 
         if (film == null) {
-            log.warn(String.format(notFoundFilmFormat, filmId));
-            NotFoundException.throwException(notFoundFilmFormat, filmId);
+            log.warn(String.format(NOT_FOUND_FILM_FORMAT, filmId));
+            NotFoundException.throwException(NOT_FOUND_FILM_FORMAT, filmId);
         }
         if (film.getUsersLikes() == null || !film.getUsersLikes().contains(userId)) {
-            log.warn(String.format(notFoundUserFormat, userId));
-            NotFoundException.throwException(notFoundUserFormat, userId);
+            log.warn(String.format(NOT_FOUND_USER_FORMAT, userId));
+            NotFoundException.throwException(NOT_FOUND_USER_FORMAT, userId);
         }
 
         film.removeLike(userId);
@@ -113,8 +112,8 @@ public class FilmService {
                 .sorted((f0, f1) -> f1.getUsersLikes().size() - f0.getUsersLikes().size())
                 .limit(count)
                 .collect(Collectors.toList());
-        popular.forEach(this::setNameForMpa);
-        popular.forEach(this::setNameForGenres);
+        setNameForMpa(popular);
+        setNameForGenres(popular);
         return popular;
     }
 
@@ -134,29 +133,58 @@ public class FilmService {
     private void checkGenres(Genre genre) {
         Genre genreFromDb = genreService.getGenreById(genre.getId());
         if (genreFromDb == null) {
-            NotFoundException.throwException(notFoundGenreFormat, genre.getId());
+            NotFoundException.throwException(NOT_FOUND_GENRE_FORMAT, genre.getId());
         }
     }
 
     private void checkMpa(MpaRating mpaRating) {
         MpaRating mpaRatingFromDb = mpaService.getMpaById(mpaRating.getId());
         if (mpaRatingFromDb == null) {
-            NotFoundException.throwException(notFoundMpaFormat, mpaRating.getId());
+            NotFoundException.throwException(NOT_FOUND_MPA_FORMAT, mpaRating.getId());
         }
     }
 
     private void checkUser(Integer userId) {
         User userFromDb = userService.getUserById(userId);
         if (userFromDb == null) {
-            NotFoundException.throwException(notFoundUserFormat, userId);
+            NotFoundException.throwException(NOT_FOUND_USER_FORMAT, userId);
         }
     }
 
     private void setNameForGenres(Film film) {
-        film.getGenres().forEach((genre) -> genre.setName(genreService.getGenreById(genre.getId()).getName()));
+//        film.getGenres().forEach((genre) -> genre.setName(genreService.getGenreById(genre.getId()).getName()));
+        setNameForGenres(new ArrayList<>() {{
+            add(film);
+        }});
+    }
+
+    private void setNameForGenres(List<Film> films) {
+        List<Genre> genresWithNames = genreService.getGenres();
+        for (Film film : films) {
+            List<Genre> genresWithoutNames = film.getGenres();
+            film.setGenres(genresWithoutNames.stream()
+                    .map(genresWithNames::indexOf)
+                    .map(genresWithNames::get)
+                    .collect(Collectors.toList()));
+        }
     }
 
     private void setNameForMpa(Film film) {
-        film.setMpa(mpaService.getMpaById(film.getMpa().getId()));
+//                film.setMpa(mpaService.getMpaById(film.getMpa().getId()));
+        setNameForMpa(new ArrayList<>() {{
+            add(film);
+        }});
+    }
+
+    private void setNameForMpa(List<Film> films) {
+        List<MpaRating> mpaRatingsWithNames = mpaService.getMpa();
+
+        for (Film film : films) {
+            if (film.getMpa() != null) {
+                int index = mpaRatingsWithNames.indexOf(film.getMpa());
+                MpaRating mpaWithName = mpaRatingsWithNames.get(index);
+                film.setMpa(mpaWithName);
+            }
+        }
     }
 }

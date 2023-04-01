@@ -11,6 +11,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user_storage.UserDbStorage;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,6 +42,7 @@ class UserDbStorageTest {
             user.setName("Name" + ordinal[0]);
             user.setEmail(ordinal[0] + "user@email.ru");
             user.setLogin(ordinal[0] + "userLogin");
+            user.setFriends(new HashSet<>());
             user.setBirthday(LocalDate.of(1950 + ordinal[0] * 10, 1 + ordinal[0], 1 + ordinal[0] * 2));
             ordinal[0]++;
         });

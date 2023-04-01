@@ -41,10 +41,8 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS friends(
---	friends_id INTEGER,
     user_id INTEGER,
     friend_id INTEGER,
---    status INTEGER,
     FOREIGN KEY (user_id)  REFERENCES users (user_id),
     FOREIGN KEY (friend_id)  REFERENCES users (user_id)
 );
@@ -55,6 +53,3 @@ CREATE TABLE IF NOT EXISTS user_likes (
     FOREIGN KEY (film_id)  REFERENCES film (film_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id)  REFERENCES users (user_id) ON DELETE CASCADE
 );
-
---select * from mpa_rating;
---select * from genres;

@@ -13,9 +13,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.utils.LocalDateAdapter;
+import ru.yandex.practicum.filmorate.util.LocalDateAdapter;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,6 +51,7 @@ class UserControllerTest {
             user.setName("Name" + ordinal[0]);
             user.setEmail(ordinal[0] + "user@email.ru");
             user.setLogin(ordinal[0] + "userLogin");
+            user.setFriends(new HashSet<>());
             user.setBirthday(LocalDate.of(1950 + ordinal[0] * 10, 1 + ordinal[0], 1 + ordinal[0] * 2));
             ordinal[0]++;
         });

@@ -7,7 +7,6 @@ import ru.yandex.practicum.filmorate.validator.LateDate;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -34,7 +33,7 @@ public class Film {
 
     private MpaRating mpa;
 
-    private final Set<Integer> usersLikes = new HashSet<>();
+    private Set<Integer> usersLikes;
 
     public void addLike(Integer userId) {
         usersLikes.add(userId);

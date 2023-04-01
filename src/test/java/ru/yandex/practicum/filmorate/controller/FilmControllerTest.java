@@ -14,11 +14,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.MpaRating;
-import ru.yandex.practicum.filmorate.utils.LocalDateAdapter;
+import ru.yandex.practicum.filmorate.util.LocalDateAdapter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +57,7 @@ class FilmControllerTest {
                     1 + ordinal[0] * 2));
             film.setMpa(new MpaRating(1, "G"));
             film.setGenres(new ArrayList<>());
+            film.setUsersLikes(new HashSet<>());
             ordinal[0]++;
         });
     }
