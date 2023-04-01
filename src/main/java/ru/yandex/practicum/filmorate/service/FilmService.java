@@ -152,10 +152,11 @@ public class FilmService {
     }
 
     private void setNameForGenres(Film film) {
-//        film.getGenres().forEach((genre) -> genre.setName(genreService.getGenreById(genre.getId()).getName()));
-        setNameForGenres(new ArrayList<>() {{
-            add(film);
-        }});
+        setNameForGenres(new ArrayList<>() {
+            {
+                add(film);
+            }
+        });
     }
 
     private void setNameForGenres(List<Film> films) {
@@ -170,10 +171,11 @@ public class FilmService {
     }
 
     private void setNameForMpa(Film film) {
-//                film.setMpa(mpaService.getMpaById(film.getMpa().getId()));
-        setNameForMpa(new ArrayList<>() {{
-            add(film);
-        }});
+        setNameForMpa(new ArrayList<>() {
+            {
+                add(film);
+            }
+        });
     }
 
     private void setNameForMpa(List<Film> films) {
