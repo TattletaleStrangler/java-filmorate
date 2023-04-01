@@ -152,8 +152,7 @@ public class FilmService {
     }
 
     private void setNameForGenres(Film film) {
-        setNameForGenres(new ArrayList<>() {
-            {
+        setNameForGenres(new ArrayList<>() {{
                 add(film);
             }
         });
@@ -171,8 +170,7 @@ public class FilmService {
     }
 
     private void setNameForMpa(Film film) {
-        setNameForMpa(new ArrayList<>() {
-            {
+        setNameForMpa(new ArrayList<>() {{
                 add(film);
             }
         });
