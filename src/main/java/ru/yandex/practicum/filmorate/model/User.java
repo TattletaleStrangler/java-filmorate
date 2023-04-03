@@ -16,21 +16,33 @@ import java.util.Set;
 @Builder
 public class User {
     private Integer id;
-    @Email (message = "Введенное значение не является адресом электронной почты.")
+
+    @Email(message = "Введенное значение не является адресом электронной почты.")
     private String email;
+
     @NotBlank
     @Pattern(regexp = "\\S*", message = "Логин не может содержать пробелы.")
     private String login;
+
     private String name;
+
     @PastOrPresent(message = "Дата рождения не может быть в будущем. ")
     private LocalDate birthday;
-    private final Set<Integer> friends = new HashSet<>();
+
+    private Set<Integer> friends;
 
     public void addFriend(Integer userId) {
+        if (friends == null) {
+            friends = new HashSet<>();
+        }
         friends.add(userId);
     }
 
     public void removeFriend(Integer userId) {
+        if (friends == null) {
+            friends = new HashSet<>();
+            return;
+        }
         friends.remove(userId);
     }
 }

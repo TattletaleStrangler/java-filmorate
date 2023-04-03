@@ -16,7 +16,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-    private Integer nextId = 1;
 
     @GetMapping
     public List<User> getUsers() {
@@ -71,13 +70,9 @@ public class UserController {
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
-    public Collection<User> getCommonFriends(@PathVariable(name = "id") Integer userId
-            , @PathVariable(name = "otherId") Integer otherId) {
+    public Collection<User> getCommonFriends(@PathVariable(name = "id") Integer userId,
+                                             @PathVariable(name = "otherId") Integer otherId) {
         log.info("Получен запрос к эндпоинту: 'GET /users/{}/friends/common/{}'", userId, otherId);
         return userService.getCommonFriends(userId, otherId);
-    }
-
-    private Integer generateId() {
-        return nextId++;
     }
 }
